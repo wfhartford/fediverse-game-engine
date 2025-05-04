@@ -1,12 +1,15 @@
-package ca.cutterslade.fedigame
+package ca.cutterslade.fedigame.game.guess
 
+import ca.cutterslade.fedigame.GameMoveResult
+import ca.cutterslade.fedigame.GameState
+import ca.cutterslade.fedigame.Player
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 
-class SampleGameSpec : FunSpec({
-  val game = SampleGame()
+class NumberGuessingGameSpec : FunSpec({
+  val game = NumberGuessingGame()
 
   test("game should have correct ID and name") {
     game.gameId shouldBe "guess"

@@ -1,13 +1,11 @@
 package ca.cutterslade.fedigame
 
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toKotlinDuration
 import arrow.core.nonEmptyListOf
-import com.typesafe.config.Config
+import ca.cutterslade.fedigame.game.guess.NumberGuessingGame
 import com.typesafe.config.ConfigFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.time.delay
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -28,7 +26,7 @@ fun main() {
 
   // Create the game engine and register games
   val gameEngine = GameEngine(
-    nonEmptyListOf(SampleGame()),
+    nonEmptyListOf(NumberGuessingGame()),
     InMemoryGameSessionStore(),
   )
 

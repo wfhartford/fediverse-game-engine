@@ -1,6 +1,10 @@
-package ca.cutterslade.fedigame
+package ca.cutterslade.fedigame.game.guess
 
 import kotlin.random.Random
+import ca.cutterslade.fedigame.Game
+import ca.cutterslade.fedigame.GameMoveResult
+import ca.cutterslade.fedigame.GameState
+import ca.cutterslade.fedigame.Player
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -20,7 +24,7 @@ data class NumberGuessingGameState(
  * is a very basic number guessing game where the player tries to guess a
  * number between 1 and 10.
  */
-class SampleGame : Game {
+class NumberGuessingGame : Game {
   override val gameId: String = "guess"
   override val gameName: String = "Number Guessing Game"
 
