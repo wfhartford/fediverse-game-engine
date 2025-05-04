@@ -96,8 +96,13 @@ sealed class GameMoveResult {
 }
 
 sealed class Player {
-  data class Remote(val id: String) : Player()
-  data object HostBot : Player()
+  abstract val mention: String
+  data class Remote(val name: String) : Player() {
+    override val mention: String = "@$name"
+  }
+  data object HostBot : Player() {
+    override val mention: String = "HostBot"
+  }
 }
 
 /**
@@ -255,7 +260,7 @@ class GameEngine(
     logger.debug { "Processing move for game ${game.gameName} in thread ${gameSession.state.sessionId}" }
 
     when (val result = game.gameMoveResult(gameSession.state)) {
-      is GameMoveResult.Win -> "The game is over. Player ${result.winner} won!"
+      is GameMoveResult.Win -> "The game is over. Player ${result.winner.mention} won!"
       GameMoveResult.Draw -> "The game is over. It was a draw!"
       GameMoveResult.Abandon -> "The game was abandoned. No further moves will be accepted."
       GameMoveResult.Continue -> null
@@ -274,7 +279,7 @@ class GameEngine(
     when (val result = game.gameMoveResult(stateAfterPlayer)) {
       is GameMoveResult.Win -> {
         val response = game.generateResponse(stateAfterPlayer)
-        "Game over! Player ${result.winner} won!\n\n$response"
+        "Game over! Player ${result.winner.mention} won!\n\n$response"
       }
 
       GameMoveResult.Draw -> {
@@ -299,7 +304,7 @@ class GameEngine(
       when (it) {
         is GameMoveResult.Win -> {
           val response = game.generateResponse(stateAfterBot)
-          "I made my move: $botMove\n\nGame over! Player ${it.winner} won!\n\n$response"
+          "I made my move: $botMove\n\nGame over! Player ${it.winner.mention} won!\n\n$response"
         }
 
         GameMoveResult.Draw -> {

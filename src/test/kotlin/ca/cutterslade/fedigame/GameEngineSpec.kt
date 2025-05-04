@@ -5,6 +5,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.nulls.shouldNotBeNull
 
 class GameEngineSpec : FunSpec({
   data class MockGamesState(
@@ -94,131 +95,50 @@ class GameEngineSpec : FunSpec({
   }
 
   test("processMention should return null for non-game related mentions") {
-    val interaction = GameInteraction(
-      interactionId = "123",
-      player = Player.Remote("player1"),
-      content = "Hello, how are you?",
-      inReplyToId = null
-    )
-    val response = gameEngine.processMention(interaction)
+    val response = gameEngine.firstRequest("Hello, how are you?")
     response shouldBe null
   }
 
   test("processMention should start a new game when given a valid game command") {
-    val interaction = GameInteraction(
-      interactionId = "123",
-      player = Player.Remote("player1"),
-      content = "play mock",
-      inReplyToId = null
-    )
-    val response = gameEngine.processMention(interaction)
-    response shouldNotBe null
-    response!!.body shouldContain "Starting a new game of Mock Game"
+    val response = gameEngine.firstRequest("play mock").shouldNotBeNull()
+    response.body shouldContain "Starting a new game of Mock Game"
   }
 
   test("processMention should handle game moves in an existing game session") {
     // First start a new game
-    val startInteraction = GameInteraction(
-      interactionId = "123",
-      player = Player.Remote("player1"),
-      content = "play mock",
-      inReplyToId = null
-    )
-    val startResponse = gameEngine.processMention(startInteraction)
-    startResponse shouldNotBe null
-
-    // Create a mock reply ID
-    val replyId = "reply456"
-    startResponse!!.idCallback(replyId)
+    val startResponse = gameEngine.firstRequest("play mock").shouldNotBeNull()
 
     // Now make a move in the game
-    val moveInteraction = GameInteraction(
-      interactionId = "789",
-      player = Player.Remote("player1"),
-      content = "my move",
-      inReplyToId = replyId
-    )
-    val moveResponse = gameEngine.processMention(moveInteraction)
-    moveResponse shouldNotBe null
-    moveResponse!!.body shouldContain "Waiting for player"
+    val moveResponse = startResponse.request("my move").shouldNotBeNull()
+    moveResponse.body shouldContain "Waiting for player"
   }
 
   test("processMention should handle winning moves") {
     // First start a new game
-    val startInteraction = GameInteraction(
-      interactionId = "123",
-      player = Player.Remote("player1"),
-      content = "play mock",
-      inReplyToId = null
-    )
-    val startResponse = gameEngine.processMention(startInteraction)
-    startResponse shouldNotBe null
-
-    // Create a mock reply ID
-    val replyId = "reply456"
-    startResponse!!.idCallback(replyId)
+    val startResponse = gameEngine.firstRequest("play mock").shouldNotBeNull()
 
     // Now make a winning move in the game
-    val moveInteraction = GameInteraction(
-      interactionId = "789",
-      player = Player.Remote("player1"),
-      content = "win move",
-      inReplyToId = replyId
-    )
-    val moveResponse = gameEngine.processMention(moveInteraction)
-    moveResponse shouldNotBe null
-    moveResponse!!.body shouldContain "Game over"
-    moveResponse.body shouldContain "player1"
+    val moveResponse = startResponse.request("win move").shouldNotBeNull()
+    moveResponse.body shouldContain "Player ${DefaultPlayer.mention} won"
   }
 
   test("processMention should handle invalid game IDs") {
-    val interaction = GameInteraction(
-      interactionId = "123",
-      player = Player.Remote("player1"),
-      content = "play nonexistent",
-      inReplyToId = null
-    )
-    val response = gameEngine.processMention(interaction)
+    val response = gameEngine.firstRequest("play nonexistent")
     response shouldBe null
   }
 
   test("processMention should handle case-insensitive game IDs") {
-    val interaction = GameInteraction(
-      interactionId = "123",
-      player = Player.Remote("player1"),
-      content = "play MOCK",
-      inReplyToId = null
-    )
-    val response = gameEngine.processMention(interaction)
-    response shouldNotBe null
-    response!!.body shouldContain "Starting a new game of Mock Game"
+    val response = gameEngine.firstRequest("play MOCK").shouldNotBeNull()
+    response.body shouldContain "Starting a new game of Mock Game"
   }
 
   test("processMention should handle game with parameters") {
-    val interaction = GameInteraction(
-      interactionId = "123",
-      player = Player.Remote("player1"),
-      content = "play mock with some parameters",
-      inReplyToId = null
-    )
-    val startResponse = gameEngine.processMention(interaction)
-    startResponse shouldNotBe null
-    startResponse!!.body shouldContain "Starting a new game of Mock Game"
+    val startResponse = gameEngine.firstRequest("play mock with some parameters").shouldNotBeNull()
+    startResponse.body shouldContain "Starting a new game of Mock Game"
     println("[DEBUG_LOG] Start response body: ${startResponse.body}")
 
-    // Create a mock reply ID
-    val replyId = "reply456"
-    startResponse!!.idCallback(replyId)
-
-    val moveInteraction = GameInteraction(
-      interactionId = "789",
-      player = Player.Remote("player1"),
-      content = "params",
-      inReplyToId = replyId
-    )
-    val moveResponse = gameEngine.processMention(moveInteraction)
-    moveResponse shouldNotBe null
-    println("[DEBUG_LOG] Move response body: ${moveResponse!!.body}")
+    val moveResponse = startResponse.request("params").shouldNotBeNull()
+    println("[DEBUG_LOG] Move response body: ${moveResponse.body}")
     moveResponse.body shouldContain "with some parameters"
   }
 
@@ -263,15 +183,8 @@ class GameEngineSpec : FunSpec({
 
     multiGameEngine.getAvailableGames().size shouldBe 2
 
-    val interaction = GameInteraction(
-      interactionId = "123",
-      player = Player.Remote("player1"),
-      content = "play another",
-      inReplyToId = null
-    )
-    val response = multiGameEngine.processMention(interaction)
-    response shouldNotBe null
-    response!!.body shouldContain "Starting a new game of Another Mock Game"
+    val response = multiGameEngine.firstRequest("play another").shouldNotBeNull()
+    response.body shouldContain "Starting a new game of Another Mock Game"
   }
 
   test("processMention should handle invalid moves") {
@@ -318,28 +231,10 @@ class GameEngineSpec : FunSpec({
     )
 
     // First start a new game
-    val startInteraction = GameInteraction(
-      interactionId = "123",
-      player = Player.Remote("player1"),
-      content = "play exception",
-      inReplyToId = null
-    )
-    val startResponse = exceptionGameEngine.processMention(startInteraction)
-    startResponse shouldNotBe null
-
-    // Create a mock reply ID
-    val replyId = "reply456"
-    startResponse!!.idCallback(replyId)
+    val startResponse = exceptionGameEngine.firstRequest("play exception").shouldNotBeNull()
 
     // Now make an invalid move
-    val moveInteraction = GameInteraction(
-      interactionId = "789",
-      player = Player.Remote("player1"),
-      content = "invalid move",
-      inReplyToId = replyId
-    )
-    val moveResponse = exceptionGameEngine.processMention(moveInteraction)
-    moveResponse shouldNotBe null
-    moveResponse!!.body shouldContain "Invalid move"
+    val moveResponse = startResponse.request("invalid move").shouldNotBeNull()
+    moveResponse.body shouldContain "Invalid move"
   }
 })

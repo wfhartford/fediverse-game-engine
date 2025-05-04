@@ -13,7 +13,7 @@ class HarnessResponse(
     request(engine, content, responseId, player)
 }
 
-val DefaultPlayer = Player.Remote("default")
+val DefaultPlayer = Player.Remote("harness-default-player")
 suspend fun GameEngine.firstRequest(
   request: String,
   player: Player.Remote = DefaultPlayer,
