@@ -2,6 +2,7 @@ package ca.cutterslade.fedigame
 
 import arrow.core.nel
 import ca.cutterslade.fedigame.game.guess.NumberGuessingGame
+import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -17,13 +18,13 @@ class PlayGuessGameSpec : FunSpec({
     val upperBound = 10 // exclusive
     val lowerBound = 1 // inclusive
     fun guess() = (lowerBound..upperBound).random()
-    var response = engine.firstRequest("play guess").shouldNotBeNull()
+    var response = engine.firstRequest("play guess").shouldBeRight()
     response.body shouldContain "between 1 and 10"
     var guesses = 0
     var guess: Int
     do {
       guess = guess()
-      response = response.request("$guess").shouldNotBeNull()
+      response = response.request("$guess").shouldBeRight()
       guesses++
     } while (!response.body.contains("Congratulations!"))
 
@@ -34,13 +35,13 @@ class PlayGuessGameSpec : FunSpec({
     var upperBound = 10 // exclusive
     var lowerBound = 1 // inclusive
     fun guess() = (lowerBound..upperBound).random()
-    var response = engine.firstRequest("play guess").shouldNotBeNull()
+    var response = engine.firstRequest("play guess").shouldBeRight()
     response.body shouldContain "between 1 and 10"
     var guesses = 0
     var guess: Int
     do {
       guess = guess()
-      response = response.request("$guess").shouldNotBeNull()
+      response = response.request("$guess").shouldBeRight()
       guesses++
       if (response.body.contains("too high")) upperBound = guess - 1
       else if (response.body.contains("too low")) lowerBound = guess + 1
@@ -54,13 +55,13 @@ class PlayGuessGameSpec : FunSpec({
     var upperBound = 10 // exclusive
     var lowerBound = 1 // inclusive
     fun guess() = (lowerBound + upperBound) / 2
-    var response = engine.firstRequest("play guess").shouldNotBeNull()
+    var response = engine.firstRequest("play guess").shouldBeRight()
     response.body shouldContain "between 1 and 10"
     var guesses = 0
     var guess: Int
     do {
       guess = guess()
-      response = response.request("$guess").shouldNotBeNull()
+      response = response.request("$guess").shouldBeRight()
       guesses++
       if (response.body.contains("too high")) upperBound = guess - 1
       else if (response.body.contains("too low")) lowerBound = guess + 1

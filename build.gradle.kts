@@ -28,6 +28,7 @@ dependencies {
   testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
   testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
   testImplementation("io.kotest:kotest-property:$kotestVersion")
+  testImplementation("io.kotest.extensions:kotest-assertions-arrow:2.0.0")
 }
 
 tasks.test {

@@ -1,5 +1,9 @@
 package ca.cutterslade.fedigame
 
+import arrow.core.Either
+import arrow.core.raise.either
+import ca.cutterslade.fedigame.spi.Game
+import ca.cutterslade.fedigame.spi.Player
 import com.typesafe.config.Config
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -79,26 +83,24 @@ class MastodonBot(
     // Respond to the mention
     try {
       val response = generateMentionResponse(status)
-      respondToStatus(status, response)
+      when (response) {
+        is Either.Right -> respondToStatus(status, response.value)
+        is Either.Left -> respondToProblem(status, response.value)
+      }
       logger.debug { "Successfully responded to mention from ${status.account?.acct}" }
     } catch (e: Exception) {
       logger.error(e) { "Failed to respond to mention: ${e.message}" }
     }
   }
 
-  suspend fun generateMentionResponse(status: Status): GameResponse {
-    val gameResponse = status.toInteraction()?.let { interaction ->gameEngine.processMention(interaction)}
-    if (gameResponse != null) {
-      logger.debug { "Generated game response for mention" }
-      return gameResponse
-    }
-
-    // If not a game-related mention, provide a default response with game instructions
-    return GameResponse.noProgress(gameListStatus())
+  suspend fun generateMentionResponse(status: Status): Either<Game.Problem, GameResponse> = either {
+    gameEngine.processMention(status.toInteraction().bind()).bind()
   }
 
-  private fun Status.toInteraction(): GameInteraction? =
+  private fun Status.toInteraction(): Either<Game.Problem, GameInteraction> = either {
     account?.let { GameInteraction(id, Player.Remote(it.id), content, inReplyToId) }
+      ?: raise(Game.CommonProblem("Status has no account: $this"))
+  }
 
   fun gameListStatus(): String =
     gameEngine.getAvailableGames().takeIf { it.isNotEmpty() }?.let { games ->
@@ -106,13 +108,6 @@ class MastodonBot(
       "Hi there! I'm a game bot. You can play the following games with me:\n$gameList\n\nTo start a game, reply with 'play <gameId>'."
     } ?: "Hi there! I'm a game bot, but no games are currently available. Please try again later."
 
-  /**
-   * Respond to a status with a reply.
-   *
-   * @param status The status to respond to
-   * @param content The content of the reply
-   * @return The posted status (reply)
-   */
   suspend fun respondToStatus(status: Status, response: GameResponse) {
     val username = status.account?.acct ?: throw MastodonBotException("Status has no account")
     logger.debug { "Responding to status from $username" }
@@ -129,6 +124,25 @@ class MastodonBot(
 
       response.idCallback(reply.id)
 
+      logger.debug { "Successfully responded to status with ID: ${reply.id}" }
+    } catch (e: BigBoneRequestException) {
+      logger.error(e) { "Failed to respond to status: ${e.message}" }
+      throw MastodonBotException("Failed to respond to status: ${e.message}", e)
+    }
+  }
+
+  suspend fun respondToProblem(status: Status, problem: Game.Problem) {
+    val username = status.account?.acct ?: throw MastodonBotException("Status has no account")
+    logger.debug { "Responding to status from $username which caused a problem: $problem" }
+    try {
+      val replyContent = postSuffix.takeIf { it.isNotBlank() }
+        ?.let { "@$username ${problem.message}\n\n$it" }
+        ?: "@$username ${problem.message}"
+      val reply = client.statuses.postStatus(
+        replyContent,
+        visibility = Visibility.UNLISTED,
+        inReplyToId = status.id
+      ).execute()
       logger.debug { "Successfully responded to status with ID: ${reply.id}" }
     } catch (e: BigBoneRequestException) {
       logger.error(e) { "Failed to respond to status: ${e.message}" }

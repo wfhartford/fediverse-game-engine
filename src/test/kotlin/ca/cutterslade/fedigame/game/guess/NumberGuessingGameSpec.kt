@@ -1,8 +1,10 @@
 package ca.cutterslade.fedigame.game.guess
 
-import ca.cutterslade.fedigame.GameMoveResult
-import ca.cutterslade.fedigame.GameState
-import ca.cutterslade.fedigame.Player
+import ca.cutterslade.fedigame.spi.GameMoveResult
+import ca.cutterslade.fedigame.spi.GameState
+import ca.cutterslade.fedigame.spi.Player
+import io.kotest.assertions.arrow.core.shouldBeLeft
+import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -18,7 +20,7 @@ class NumberGuessingGameSpec : FunSpec({
 
   test("createInitialState should initialize game state correctly") {
     val player = Player.Remote("player123")
-    val state = game.createInitialState("thread123", player, null)
+    val state = game.createInitialState("thread123", player, null).shouldBeRight()
 
     state.shouldBeInstanceOf<NumberGuessingGameState>().apply {
       sessionId shouldBe "thread123"
@@ -44,7 +46,7 @@ class NumberGuessingGameSpec : FunSpec({
 
     // Test with a guess that's too low
     val lowGuessMove = "I guess 3"
-    val lowGuessState = game.processMove(initialState, player, lowGuessMove)
+    val lowGuessState = game.processMove(initialState, player, lowGuessMove).shouldBeRight()
 
     lowGuessState.shouldBeInstanceOf<NumberGuessingGameState>().apply {
       attempts shouldBe 1
@@ -54,7 +56,7 @@ class NumberGuessingGameSpec : FunSpec({
 
     // Test with a guess that's too high
     val highGuessMove = "I guess 8"
-    val highGuessState = game.processMove(initialState, player, highGuessMove)
+    val highGuessState = game.processMove(initialState, player, highGuessMove).shouldBeRight()
 
     highGuessState.shouldBeInstanceOf<NumberGuessingGameState>().apply {
       attempts shouldBe 1
@@ -74,7 +76,7 @@ class NumberGuessingGameSpec : FunSpec({
     )
 
     val correctGuessMove = "I guess 5"
-    val correctGuessState = game.processMove(initialState, player, correctGuessMove)
+    val correctGuessState = game.processMove(initialState, player, correctGuessMove).shouldBeRight()
 
     correctGuessState.shouldBeInstanceOf<NumberGuessingGameState>().apply {
       attempts shouldBe 1
@@ -95,11 +97,9 @@ class NumberGuessingGameSpec : FunSpec({
 
     // Test with a guess outside the valid range
     val invalidGuessMove = "I guess 15"
-    val exception = runCatching { game.processMove(initialState, player, invalidGuessMove) }
-      .exceptionOrNull()
+    val exception = game.processMove(initialState, player, invalidGuessMove).shouldBeLeft()
 
-    exception.shouldBeInstanceOf<IllegalArgumentException>()
-      .message shouldBe "Please guess a number between 1 and 10"
+    exception.message shouldBe "Please guess a number between 1 and 10"
   }
 
   test("generateResponse should return appropriate message for initial state") {
@@ -214,8 +214,7 @@ class NumberGuessingGameSpec : FunSpec({
       status = GameState.Status.WAITING_FOR_PLAYER
     )
 
-    runCatching { game.generateBotMove(state) }.exceptionOrNull()
-      .shouldBeInstanceOf<UnsupportedOperationException>()
+    game.generateBotMove(state).shouldBeLeft()
       .message shouldContain "Bot doesn't make moves"
   }
 })
