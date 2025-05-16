@@ -5,27 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ce2b7a7c-4dab-4526-92b5-ff72a7d45612" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/ca/cutterslade/fedigame/cli.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/ca/cutterslade/fedigame/game/tictactoe/TicTacToeGame.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/ca/cutterslade/fedigame/spi/Game.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/ca/cutterslade/fedigame/spi/GameMoveResult.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/ca/cutterslade/fedigame/spi/GameState.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/ca/cutterslade/fedigame/spi/Player.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/Project.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/codeStyles/Project.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/ca/cutterslade/fedigame/GameEngine.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/ca/cutterslade/fedigame/GameEngine.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/ca/cutterslade/fedigame/MastodonBot.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/ca/cutterslade/fedigame/MastodonBot.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/ca/cutterslade/fedigame/game/guess/NumberGuessingGame.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/ca/cutterslade/fedigame/game/guess/NumberGuessingGame.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/ca/cutterslade/fedigame/GameEngineSpec.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/kotlin/ca/cutterslade/fedigame/GameEngineSpec.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/ca/cutterslade/fedigame/PlayGuessGameSpec.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/kotlin/ca/cutterslade/fedigame/PlayGuessGameSpec.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/ca/cutterslade/fedigame/game-engine-test-harness.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/ca/cutterslade/fedigame/game-engine-test-harness.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/kotlin/ca/cutterslade/fedigame/game/guess/NumberGuessingGameSpec.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/kotlin/ca/cutterslade/fedigame/game/guess/NumberGuessingGameSpec.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -307,6 +287,7 @@
       <workItem from="1747245600835" duration="269000" />
       <workItem from="1747245880526" duration="306000" />
       <workItem from="1747246197262" duration="984000" />
+      <workItem from="1747247193104" duration="2664000" />
     </task>
     <servers />
   </component>
