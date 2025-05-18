@@ -1,16 +1,19 @@
 package ca.cutterslade.fedigame
 
 import arrow.core.Either
+import arrow.core.raise.Raise
 import arrow.core.raise.either
 import ca.cutterslade.fedigame.mastodon.MastodonClient
+import ca.cutterslade.fedigame.mastodon.MastodonClientProblem
+import ca.cutterslade.fedigame.mastodon.Notification
+import ca.cutterslade.fedigame.mastodon.Status
 import ca.cutterslade.fedigame.spi.Game
 import ca.cutterslade.fedigame.spi.Player
 import com.typesafe.config.Config
 import kotlinx.coroutines.flow.count
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import mu.KotlinLogging
-import social.bigbone.api.entity.Notification
-import social.bigbone.api.entity.Status
 import social.bigbone.api.exception.BigBoneRequestException
 
 class MastodonBot(
@@ -23,33 +26,37 @@ class MastodonBot(
   private val postSuffix: String
     get() = config.getString("mastodon.post-suffix")
 
-  suspend fun handleMentions(): Int {
-    try {
-      return client.notificationFlow()
-        .onEach { handleMention(it) }
-        .onEach { client.dismissNotification(it.id) }
-        .onEach { logger.debug { "Handled a mention: ${it.status?.content?.take(50)}..." } }
-        .count()
-    } catch (e: BigBoneRequestException) {
-      logger.error(e) { "Failed to get mentions: ${e.message}" }
-      throw MastodonBotException("Failed to get mentions: ${e.message}", e)
-    }
-  }
+  suspend fun handleMentions(): Int = client.notificationFlow()
+    .mapNotNull { flowElement ->
+      when (flowElement) {
+        is Either.Left -> null.also {
+          logger.warn(flowElement.value.cause) { "Error from notification flow: ${flowElement.value}" }
+        }
 
-  private suspend fun handleMention(notification: Notification) {
-    logger.debug { "Handling mention notification with ID: ${notification.id}" }
-    val status = notification.status ?: run {
-      logger.warn { "Notification ${notification.id} has no status" }
-      return
-    }
-
-    try {
-      val response = generateMentionResponse(status)
-      when (response) {
-        is Either.Right -> respondToStatus(status, response.value)
-        is Either.Left -> respondToProblem(status, response.value)
+        is Either.Right -> flowElement.value
       }
-      logger.debug { "Successfully responded to mention from ${status.account?.acct}" }
+    }
+    .onEach { notification ->
+      either { handleMention(notification) }
+        .onLeft { logger.warn(it.cause) { "Error responding to status: $it" } }
+    }
+    .onEach { notification ->
+      client.dismissNotification(notification.id)
+        .onLeft { logger.warn(it.cause) { "Error dismissing notification: $it"} }
+    }
+    .onEach { logger.debug { "Handled a mention: ${it.status.content.take(50)}..." } }
+    .count()
+
+  private suspend fun Raise<MastodonClientProblem>.handleMention(notification: Notification) {
+    logger.debug { "Handling mention notification with ID: ${notification.id}" }
+
+    try {
+      val response = generateMentionResponse(notification.status)
+      when (response) {
+        is Either.Right -> respondToStatus(notification.status, response.value)
+        is Either.Left -> respondToProblem(notification.status, response.value)
+      }
+      logger.debug { "Successfully responded to mention from ${notification.status.account.qualifiedName}" }
     } catch (e: Exception) {
       logger.error(e) { "Failed to respond to mention: ${e.message}" }
     }
@@ -60,33 +67,22 @@ class MastodonBot(
   }
 
   private fun Status.toInteraction(): Either<Game.Problem, GameInteraction> = either {
-    account?.let { GameInteraction(id, Player.Remote(it.id), content, inReplyToId) }
-      ?: raise(Game.CommonProblem("Status has no account: $this"))
+    GameInteraction(id, Player.Remote(account.id), content, inReplyToId)
   }
 
-  private suspend fun respondToStatus(status: Status, response: GameResponse) {
-    try {
-      val reply = client.unlistedPost(responseMessage(status, response.body), status.id)
-      response.idCallback(reply.id)
-      logger.debug { "Successfully responded to status with ID: ${reply.id}" }
-    } catch (e: BigBoneRequestException) {
-      logger.error(e) { "Failed to respond to status: ${e.message}" }
-      throw MastodonBotException("Failed to respond to status: ${e.message}", e)
-    }
+  private suspend fun Raise<MastodonClientProblem>.respondToStatus(status: Status, response: GameResponse) {
+    val reply = client.unlistedPost(responseMessage(status, response.body), status.id).bind()
+    response.idCallback(reply.id)
+    logger.debug { "Successfully responded to status with ID: ${reply.id}" }
   }
 
-  private suspend fun respondToProblem(status: Status, problem: Game.Problem) {
-    try {
-      val reply = client.unlistedPost(responseMessage(status, problem.message), status.id)
-      logger.debug { "Successfully responded to status with ID: ${reply.id}" }
-    } catch (e: BigBoneRequestException) {
-      logger.error(e) { "Failed to respond to status: ${e.message}" }
-      throw MastodonBotException("Failed to respond to status: ${e.message}", e)
-    }
+  private suspend fun Raise<MastodonClientProblem>.respondToProblem(status: Status, problem: Game.Problem) {
+    val reply = client.unlistedPost(responseMessage(status, problem.message), status.id).bind()
+    logger.debug { "Successfully responded to status with ID: ${reply.id}" }
   }
 
   private fun responseMessage(status: Status, body: String): String {
-    val username = status.account?.acct ?: throw MastodonBotException("Status has no account")
+    val username = status.account.qualifiedName
     logger.debug { "Building response message for $username with body: $body" }
     return postSuffix.takeIf { it.isNotBlank() }
       ?.let { "@$username $body\n\n$it" }

@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
   kotlin("jvm") version "2.1.10"
+  kotlin("plugin.serialization") version "2.1.10"
 }
 
 group = "ca.cutterslade.fedigame"
@@ -21,6 +22,14 @@ dependencies {
   implementation("com.typesafe:config:1.4.3")
   implementation("io.arrow-kt:arrow-core:2.1.0")
   implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
+
+  // Ktor dependencies
+  val ktorVersion = "2.3.9"
+  implementation("io.ktor:ktor-client-core:$ktorVersion")
+  implementation("io.ktor:ktor-client-cio:$ktorVersion")
+  implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+  implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
   runtimeOnly("ch.qos.logback:logback-classic:1.5.18")
 
