@@ -42,11 +42,17 @@ class BigBoneMastodonClient(
 
   private val instanceName: String
     get() = config.getString("mastodon.instance-name")
+  private val port: Int
+    get() = config.getInt("mastodon.port")
+  private val disableHttps: Boolean
+    get() = config.getBoolean("mastodon.disable-https")
   private val accessToken: String
     get() = config.getString("mastodon.access-token")
   private val client: BigBone by lazy {
     logger.debug { "Initializing MastodonClient with instance: $instanceName" }
     BigBone.Builder(instanceName)
+      .withPort(port)
+      .apply { if (disableHttps) withHttpsDisabled() }
       .accessToken(accessToken)
       .build()
   }
