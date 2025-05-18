@@ -1,4 +1,4 @@
-package ca.cutterslade.fedigame
+package ca.cutterslade.fedigame.mastodon
 
 import com.typesafe.config.Config
 import kotlinx.coroutines.flow.Flow
@@ -9,15 +9,16 @@ import mu.KotlinLogging
 import social.bigbone.MastodonRequest
 import social.bigbone.api.Pageable
 import social.bigbone.api.Range
+import social.bigbone.api.entity.Notification
 import social.bigbone.api.entity.Status
 import social.bigbone.api.entity.data.Visibility
 import social.bigbone.MastodonClient as BigBone
 
 private val logger = KotlinLogging.logger {}
 
-class MastodonClient(
+class BigBoneMastodonClient(
   private val config: Config,
-) {
+) : MastodonClient {
   private companion object {
     fun <T> pageableFlow(
       limit: Int = 40,
@@ -32,6 +33,7 @@ class MastodonClient(
       }
     }
   }
+
   private val instanceName: String
     get() = config.getString("mastodon.instance-name")
   private val accessToken: String
@@ -43,9 +45,11 @@ class MastodonClient(
       .build()
   }
 
-  fun notifications() = pageableFlow { client.notifications.getAllNotifications(range = it) }
-  suspend fun dismissNotification(id: String) = client.notifications.dismissNotification(id)
-  suspend fun unlistedPost(body: String, inReplyTo: String): Status =
+  override fun notificationFlow(): Flow<Notification> =
+    pageableFlow { client.notifications.getAllNotifications(range = it) }
+
+  override suspend fun dismissNotification(id: String): Unit = client.notifications.dismissNotification(id)
+  override suspend fun unlistedPost(body: String, inReplyTo: String): Status =
     client.statuses.postStatus(
       body,
       visibility = Visibility.UNLISTED,

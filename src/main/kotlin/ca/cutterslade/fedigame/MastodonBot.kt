@@ -2,6 +2,7 @@ package ca.cutterslade.fedigame
 
 import arrow.core.Either
 import arrow.core.raise.either
+import ca.cutterslade.fedigame.mastodon.MastodonClient
 import ca.cutterslade.fedigame.spi.Game
 import ca.cutterslade.fedigame.spi.Player
 import com.typesafe.config.Config
@@ -15,18 +16,16 @@ import social.bigbone.api.exception.BigBoneRequestException
 class MastodonBot(
   private val config: Config,
   private val gameEngine: GameEngine,
+  private val client: MastodonClient,
 ) {
   private val logger = KotlinLogging.logger {}
 
   private val postSuffix: String
     get() = config.getString("mastodon.post-suffix")
 
-  private val client: MastodonClient = MastodonClient(config)
-
-  suspend fun handleMentions(limit: Int = 40): Int {
-    logger.debug { "Fetching mentions with limit: $limit" }
+  suspend fun handleMentions(): Int {
     try {
-      return client.notifications()
+      return client.notificationFlow()
         .onEach { handleMention(it) }
         .onEach { client.dismissNotification(it.id) }
         .onEach { logger.debug { "Handled a mention: ${it.status?.content?.take(50)}..." } }
@@ -37,7 +36,7 @@ class MastodonBot(
     }
   }
 
-  suspend fun handleMention(notification: Notification) {
+  private suspend fun handleMention(notification: Notification) {
     logger.debug { "Handling mention notification with ID: ${notification.id}" }
     val status = notification.status ?: run {
       logger.warn { "Notification ${notification.id} has no status" }
@@ -56,7 +55,7 @@ class MastodonBot(
     }
   }
 
-  suspend fun generateMentionResponse(status: Status): Either<Game.Problem, GameResponse> = either {
+  private suspend fun generateMentionResponse(status: Status): Either<Game.Problem, GameResponse> = either {
     gameEngine.processMention(status.toInteraction().bind()).bind()
   }
 
@@ -65,9 +64,7 @@ class MastodonBot(
       ?: raise(Game.CommonProblem("Status has no account: $this"))
   }
 
-  suspend fun respondToStatus(status: Status, response: GameResponse) {
-    val username = status.account?.acct ?: throw MastodonBotException("Status has no account")
-    logger.debug { "Responding to status from $username with response body: ${response.body}" }
+  private suspend fun respondToStatus(status: Status, response: GameResponse) {
     try {
       val reply = client.unlistedPost(responseMessage(status, response.body), status.id)
       response.idCallback(reply.id)
@@ -78,9 +75,7 @@ class MastodonBot(
     }
   }
 
-  suspend fun respondToProblem(status: Status, problem: Game.Problem) {
-    val username = status.account?.acct ?: throw MastodonBotException("Status has no account")
-    logger.debug { "Responding to status from $username which caused a problem: $problem" }
+  private suspend fun respondToProblem(status: Status, problem: Game.Problem) {
     try {
       val reply = client.unlistedPost(responseMessage(status, problem.message), status.id)
       logger.debug { "Successfully responded to status with ID: ${reply.id}" }
@@ -90,8 +85,9 @@ class MastodonBot(
     }
   }
 
-  fun responseMessage(status: Status, body: String): String {
+  private fun responseMessage(status: Status, body: String): String {
     val username = status.account?.acct ?: throw MastodonBotException("Status has no account")
+    logger.debug { "Building response message for $username with body: $body" }
     return postSuffix.takeIf { it.isNotBlank() }
       ?.let { "@$username $body\n\n$it" }
       ?: "@$username $body"

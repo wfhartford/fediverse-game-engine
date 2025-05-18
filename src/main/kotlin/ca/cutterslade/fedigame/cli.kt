@@ -5,12 +5,13 @@ import arrow.core.getOrElse
 import arrow.core.left
 import arrow.core.nonEmptyListOf
 import arrow.core.raise.either
+import ca.cutterslade.fedigame.game.allGames
 import ca.cutterslade.fedigame.game.guess.NumberGuessingGame
 import ca.cutterslade.fedigame.game.tictactoe.TicTacToeGame
 import ca.cutterslade.fedigame.spi.Game
 
 suspend fun main() {
-  val engine = GameEngine(nonEmptyListOf(NumberGuessingGame(), TicTacToeGame()), InMemoryGameSessionStore())
+  val engine = GameEngine(allGames(), InMemoryGameSessionStore())
 
   println("Enter a command (play <game id> or quit):")
   engine.getAvailableGames().forEach { game -> println(" - ${game.gameId}: ${game.gameName}") }

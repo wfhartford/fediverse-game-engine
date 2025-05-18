@@ -2,7 +2,10 @@ package ca.cutterslade.fedigame
 
 import kotlin.time.toKotlinDuration
 import arrow.core.nonEmptyListOf
+import ca.cutterslade.fedigame.game.allGames
 import ca.cutterslade.fedigame.game.guess.NumberGuessingGame
+import ca.cutterslade.fedigame.game.tictactoe.TicTacToeGame
+import ca.cutterslade.fedigame.mastodon.BigBoneMastodonClient
 import com.typesafe.config.ConfigFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -21,17 +24,18 @@ fun main() {
   val config = ConfigFactory.load()
 
   // Get configuration values
-  val mentionsLimit = config.getInt("engine.limits.mentions")
   val mentionsDelay = config.getDuration("engine.delays.mentions").toKotlinDuration()
 
   // Create the game engine and register games
   val gameEngine = GameEngine(
-    nonEmptyListOf(NumberGuessingGame()),
+    allGames(),
     InMemoryGameSessionStore(),
   )
 
+  val mastodonClient = BigBoneMastodonClient(config)
+
   // Create the bot with the game engine
-  val bot = MastodonBot(config, gameEngine)
+  val bot = MastodonBot(config, gameEngine, mastodonClient)
 
   logger.info { "Available games: ${gameEngine.getAvailableGames().map { it.gameName }}" }
 
@@ -40,7 +44,7 @@ fun main() {
     try {
       logger.info { "Starting main loop to process mentions" }
       while (true) {
-        val count = bot.handleMentions(mentionsLimit)
+        val count = bot.handleMentions()
         logger.info { "Processed $count mentions" }
         delay(mentionsDelay)
       }

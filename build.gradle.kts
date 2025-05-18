@@ -29,10 +29,13 @@ dependencies {
   testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
   testImplementation("io.kotest:kotest-property:$kotestVersion")
   testImplementation("io.kotest.extensions:kotest-assertions-arrow:2.0.0")
+  testImplementation("io.mockk:mockk:1.13.10")
 }
 
 tasks.test {
   useJUnitPlatform()
+  systemProperty("kotest.framework.classpath.scanning.autoscan.disable", "true")
+  jvmArgs("-XX:+EnableDynamicAgentLoading")
 }
 kotlin {
   jvmToolchain(21)
