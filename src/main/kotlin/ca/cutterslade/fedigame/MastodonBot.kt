@@ -22,16 +22,6 @@ import social.bigbone.api.entity.Status
 import social.bigbone.api.entity.data.Visibility
 import social.bigbone.api.exception.BigBoneRequestException
 
-/**
- * A simple Mastodon bot that can authenticate and post statuses.
- *
- * This bot provides basic functionality for interacting with a Mastodon
- * instance:
- * - Posting statuses
- * - Following/unfollowing users
- * - Boosting and favoriting posts
- * - Retrieving timelines
- */
 class MastodonBot(
   private val config: Config,
   private val gameEngine: GameEngine,
@@ -52,11 +42,6 @@ class MastodonBot(
       .build()
   }
 
-  /**
-   * Handle and dismiss all outstanding mention notifications.
-   *
-   * @param limit Maximum number of statuses to check (default: 40)
-   */
   suspend fun handleMentions(limit: Int = 40): Int {
     logger.debug { "Fetching mentions with limit: $limit" }
     try {
@@ -80,7 +65,6 @@ class MastodonBot(
       return
     }
 
-    // Respond to the mention
     try {
       val response = generateMentionResponse(status)
       when (response) {
@@ -102,28 +86,12 @@ class MastodonBot(
       ?: raise(Game.CommonProblem("Status has no account: $this"))
   }
 
-  fun gameListStatus(): String =
-    gameEngine.getAvailableGames().takeIf { it.isNotEmpty() }?.let { games ->
-      val gameList = games.joinToString("\n") { "- ${it.gameName} (play ${it.gameId})" }
-      "Hi there! I'm a game bot. You can play the following games with me:\n$gameList\n\nTo start a game, reply with 'play <gameId>'."
-    } ?: "Hi there! I'm a game bot, but no games are currently available. Please try again later."
-
   suspend fun respondToStatus(status: Status, response: GameResponse) {
     val username = status.account?.acct ?: throw MastodonBotException("Status has no account")
-    logger.debug { "Responding to status from $username" }
+    logger.debug { "Responding to status from $username with response body: ${response.body}" }
     try {
-      // Create a reply to the status
-      val replyContent = postSuffix.takeIf { it.isNotBlank() }
-        ?.let { "@$username ${response.body}\n\n$it" }
-        ?: "@$username ${response.body}"
-      val reply = client.statuses.postStatus(
-        replyContent,
-        visibility = Visibility.UNLISTED,
-        inReplyToId = status.id
-      ).execute()
-
+      val reply = unlistedPost(responseMessage(status, response.body), status.id)
       response.idCallback(reply.id)
-
       logger.debug { "Successfully responded to status with ID: ${reply.id}" }
     } catch (e: BigBoneRequestException) {
       logger.error(e) { "Failed to respond to status: ${e.message}" }
@@ -135,20 +103,27 @@ class MastodonBot(
     val username = status.account?.acct ?: throw MastodonBotException("Status has no account")
     logger.debug { "Responding to status from $username which caused a problem: $problem" }
     try {
-      val replyContent = postSuffix.takeIf { it.isNotBlank() }
-        ?.let { "@$username ${problem.message}\n\n$it" }
-        ?: "@$username ${problem.message}"
-      val reply = client.statuses.postStatus(
-        replyContent,
-        visibility = Visibility.UNLISTED,
-        inReplyToId = status.id
-      ).execute()
+      val reply = unlistedPost(responseMessage(status, problem.message), status.id)
       logger.debug { "Successfully responded to status with ID: ${reply.id}" }
     } catch (e: BigBoneRequestException) {
       logger.error(e) { "Failed to respond to status: ${e.message}" }
       throw MastodonBotException("Failed to respond to status: ${e.message}", e)
     }
   }
+
+  fun responseMessage(status: Status, body: String): String {
+    val username = status.account?.acct ?: throw MastodonBotException("Status has no account")
+    return postSuffix.takeIf { it.isNotBlank() }
+      ?.let { "@$username $body\n\n$it" }
+      ?: "@$username $body"
+  }
+
+  suspend fun unlistedPost(body: String, inReplyTo: String): Status =
+    client.statuses.postStatus(
+      body,
+      visibility = Visibility.UNLISTED,
+      inReplyToId = inReplyTo
+    ).execute()
 
   class MastodonBotException(message: String, cause: Throwable? = null) : Exception(message, cause)
 }
