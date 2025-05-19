@@ -1,0 +1,10 @@
+### GET nodeinfo link
+GET https://mastodon.social/.well-known/nodeinfo
+
+### GET nodeinfo
+GET https://mastodon.social/nodeinfo/2.0
+
+### GET request to example server
+GET https://mastodon.social/api/v2/instance
+
+###

@@ -25,12 +25,23 @@ dependencies {
 
   runtimeOnly("ch.qos.logback:logback-classic:1.5.18")
 
-  val kotestVersion = "5.9.1"
+  val kotestVersion = "6.0.0.M4"
   testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
   testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
   testImplementation("io.kotest:kotest-property:$kotestVersion")
   testImplementation("io.kotest.extensions:kotest-assertions-arrow:2.0.0")
   testImplementation("io.mockk:mockk:1.13.10")
+
+  val ktorVersion = "3.1.3"
+  testImplementation(platform("io.ktor:ktor-bom:$ktorVersion"))
+  testImplementation("io.ktor:ktor-server-core")
+  testImplementation("io.ktor:ktor-server-netty")
+  testImplementation("io.ktor:ktor-server-content-negotiation")
+  testImplementation("io.ktor:ktor-client-core")
+  testImplementation("io.ktor:ktor-client-cio")
+  testImplementation("io.ktor:ktor-serialization-kotlinx-json")
+  testImplementation("io.ktor:ktor-serialization-gson")
+  testImplementation("io.ktor:ktor-server-call-logging")
 }
 
 tasks.test {
