@@ -64,7 +64,6 @@ class GameEngineSpec : FunSpec({
         }
 
         GameState.Status.WAITING_FOR_PLAYER -> "Waiting for player"
-        else -> "Unknown state"
       }
     }
 
