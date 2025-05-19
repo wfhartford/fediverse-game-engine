@@ -16,7 +16,6 @@ repositories {
 }
 
 dependencies {
-  testImplementation(kotlin("test"))
   implementation("social.bigbone:bigbone:2.0.0-SNAPSHOT")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
   implementation("com.typesafe:config:1.4.3")
@@ -25,10 +24,11 @@ dependencies {
 
   runtimeOnly("ch.qos.logback:logback-classic:1.5.18")
 
+  testImplementation(kotlin("test"))
+
   val kotestVersion = "6.0.0.M4"
   testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
   testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
-  testImplementation("io.kotest:kotest-property:$kotestVersion")
   testImplementation("io.kotest.extensions:kotest-assertions-arrow:2.0.0")
   testImplementation("io.mockk:mockk:1.13.10")
 
@@ -40,8 +40,6 @@ dependencies {
   testImplementation("io.ktor:ktor-client-core")
   testImplementation("io.ktor:ktor-client-cio")
   testImplementation("io.ktor:ktor-serialization-kotlinx-json")
-  testImplementation("io.ktor:ktor-serialization-gson")
-  testImplementation("io.ktor:ktor-server-call-logging")
 }
 
 tasks.test {

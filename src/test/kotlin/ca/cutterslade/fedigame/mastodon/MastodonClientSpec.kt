@@ -10,7 +10,6 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
-import io.ktor.serialization.gson.gson
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.install
 import io.ktor.server.engine.EmbeddedServer
@@ -57,7 +56,6 @@ class MastodonClientSpec : FunSpec({
     server = embeddedServer(Netty, port = 0) {
       install(ContentNegotiation) {
         json()
-        gson()
       }
       routing {
         get("/") {
