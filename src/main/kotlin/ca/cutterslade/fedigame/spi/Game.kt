@@ -10,7 +10,9 @@ interface Game {
   interface Problem {
     val message: String
   }
-  data class CommonProblem(override val message: String):Problem
+
+  data class CommonProblem(override val message: String) : Problem
+
   /** The unique identifier for this game type. */
   val gameId: String
 
@@ -24,7 +26,11 @@ interface Game {
    * @param player The identifier of the player who started the game
    * @return A new game state
    */
-  suspend fun createInitialState(gameSessionId: String, player: Player.Remote, params: String?): Either<Problem, GameState>
+  suspend fun createInitialState(
+    gameSessionId: String,
+    player: Player.Remote,
+    params: String?,
+  ): Either<Problem, GameState>
 
   /**
    * Process a player's move and update the game state.

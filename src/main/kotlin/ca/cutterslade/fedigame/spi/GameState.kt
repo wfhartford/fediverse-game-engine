@@ -10,7 +10,11 @@ interface GameState {
     WAITING_FOR_PLAYER,
     WAITING_FOR_BOT,
     COMPLETED,
-    ABANDONED
+    ABANDONED;
+
+    companion object {
+      val FinalStates = setOf(ABANDONED, COMPLETED)
+    }
   }
 
   /** The unique identifier for this game session. */

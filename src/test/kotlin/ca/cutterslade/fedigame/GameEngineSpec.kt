@@ -8,7 +8,6 @@ import ca.cutterslade.fedigame.spi.Game
 import ca.cutterslade.fedigame.spi.GameMoveResult
 import ca.cutterslade.fedigame.spi.GameState
 import ca.cutterslade.fedigame.spi.Player
-import io.kotest.assertions.arrow.core.shouldBeLeft
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -45,8 +44,8 @@ class GameEngineSpec : FunSpec({
           else -> GameState.Status.WAITING_FOR_PLAYER
         },
         move,
-        (state as? MockGamesState)?.parameters,
-        (state as? MockGamesState)?.nextPlayer!!
+        state.parameters,
+        state.nextPlayer.shouldNotBeNull()
       ).right()
     }
 
@@ -230,16 +229,21 @@ class GameEngineSpec : FunSpec({
       }
     }
 
+    val store = InMemoryGameSessionStore()
     val exceptionGameEngine = GameEngine(
       nonEmptyListOf(exceptionGame),
-      InMemoryGameSessionStore()
+      store
     )
 
     // First start a new game
     val startResponse = exceptionGameEngine.firstRequest("play exception").shouldBeRight()
+    val initialState = store.get(startResponse.responseId)?.state.shouldNotBeNull()
 
-    // Now make an invalid move
-    val problem = startResponse.request("invalid move").shouldBeLeft()
-    problem.message shouldBe "Invalid move"
+    // Now make an invalid move.
+    // Invalid move results in a valid response with an unchanged state
+    val response = startResponse.request("invalid move").shouldBeRight()
+    response.body shouldBe "Invalid move"
+    val updatedState = store.get(startResponse.responseId)?.state.shouldNotBeNull()
+    updatedState shouldBe initialState
   }
 })

@@ -97,4 +97,8 @@ class BigBoneMastodonClient(
 
   private fun BigBoneInstance.instance(): Instance =
     Instance(domain, title, version, sourceUrl, description)
+
+  override fun close() {
+    // BigBone does not need to be shutdown
+  }
 }

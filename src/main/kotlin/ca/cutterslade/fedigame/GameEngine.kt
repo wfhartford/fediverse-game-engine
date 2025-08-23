@@ -120,12 +120,6 @@ class GameEngine(
     }
   }
 
-  private val Player.mention: String
-    get() = when (this) {
-      is Player.Remote -> "@$name"
-      is Player.HostBot -> "HostBot"
-    }
-
   private suspend fun processGameMove(
     gameSession: GameSession,
     interaction: GameInteraction,
@@ -137,48 +131,32 @@ class GameEngine(
     gameAlreadyFinishedMessage(game, gameSession)
       ?.also { body -> return@either GameResponse(body) { gameSessionStore.put(it, gameSession) } }
 
-    val stateAfterPlayer = game.processMove(gameSession.state, interaction.player, interaction.content).bind()
+    val moveResult = game.processMove(gameSession.state, interaction.player, interaction.content)
+    var stateAfterPlayer = when (moveResult) {
+      is Either.Left -> return@either GameResponse(moveResult.value.message) { gameSessionStore.put(it, gameSession) }
+      is Either.Right -> moveResult.value
+    }
 
     gameFinishedAfterPlayersMoveMessage(game, stateAfterPlayer)
       ?.also { body ->
         return@either GameResponse(body) { gameSessionStore.put(it, gameSession.update(stateAfterPlayer)) }
       }
 
-    if (!game.isBotTurn(stateAfterPlayer)) {
-      return@either GameResponse(game.generateResponse(stateAfterPlayer)) {
-        gameSessionStore.put(it, gameSession.update(stateAfterPlayer))
+    while (game.isBotTurn(stateAfterPlayer)) {
+      val botMove = game.generateBotMove(stateAfterPlayer).bind()
+      stateAfterPlayer = game.processMove(stateAfterPlayer, Player.HostBot, botMove).bind()
+      gameFinishedAfterPlayersMoveMessage(game, stateAfterPlayer)
+        ?.also { body ->
+          return@either GameResponse(body) { gameSessionStore.put(it, gameSession.update(stateAfterPlayer)) }
+        }
+      if (logger.isDebugEnabled) {
+        val message = "Bot move: $botMove\n\n${game.generateResponse(stateAfterPlayer)}"
+        logger.debug { message }
       }
     }
 
-    val botMove = game.generateBotMove(stateAfterPlayer).bind()
-    val stateAfterBot = game.processMove(stateAfterPlayer, Player.HostBot, botMove).bind()
-    GameResponse(botMoveMessage(game, stateAfterBot, botMove)) {
-      gameSessionStore.put(it, gameSession.update(stateAfterBot))
-    }
-  }
-
-  private suspend fun botMoveMessage(
-    game: Game,
-    stateAfterBot: GameState,
-    botMove: String,
-  ): String = game.gameMoveResult(stateAfterBot).let {
-    when (it) {
-      is GameMoveResult.Win -> {
-        val response = game.generateResponse(stateAfterBot)
-        "I made my move: $botMove\n\nGame over! Player ${it.winner.mention} won!\n\n$response"
-      }
-
-      GameMoveResult.Draw -> {
-        val response = game.generateResponse(stateAfterBot)
-        "I made my move: $botMove\n\nGame over! It's a draw!\n\n$response"
-      }
-
-      GameMoveResult.Continue -> {
-        val response = game.generateResponse(stateAfterBot)
-        "I made my move: $botMove\n\n$response"
-      }
-
-      GameMoveResult.Abandon -> "The game was abandoned. No further moves will be accepted."
+    GameResponse(game.generateResponse(stateAfterPlayer)) {
+      gameSessionStore.put(it, gameSession.update(stateAfterPlayer))
     }
   }
 

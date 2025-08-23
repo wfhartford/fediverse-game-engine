@@ -11,7 +11,7 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 
 class NumberGuessingGameSpec : FunSpec({
-  val game = NumberGuessingGame()
+  val game = NumberGuessingGame
 
   test("game should have correct ID and name") {
     game.gameId shouldBe "guess"

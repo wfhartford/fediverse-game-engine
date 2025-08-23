@@ -5,12 +5,11 @@ import ca.cutterslade.fedigame.game.guess.NumberGuessingGame
 import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.string.shouldContain
 
 class PlayGuessGameSpec : FunSpec({
   val engine = GameEngine(
-    NumberGuessingGame().nel(),
+    NumberGuessingGame.nel(),
     InMemoryGameSessionStore()
   )
 

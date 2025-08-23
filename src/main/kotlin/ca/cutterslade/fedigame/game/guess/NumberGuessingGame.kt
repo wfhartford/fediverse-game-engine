@@ -15,8 +15,6 @@ import ca.cutterslade.fedigame.spi.GameState
 import ca.cutterslade.fedigame.spi.Player
 import mu.KotlinLogging
 
-private val logger = KotlinLogging.logger {}
-
 /** The state of a number guessing game. */
 data class NumberGuessingGameState(
   override val sessionId: String,
@@ -40,7 +38,7 @@ private fun GameState.mine(): NumberGuessingGameState {
  * is a very basic number guessing game where the player tries to guess a
  * number between 1 and 10.
  */
-class NumberGuessingGame : Game {
+object NumberGuessingGame : Game {
   override val gameId: String = "guess"
   override val gameName: String = "Number Guessing Game"
 

@@ -92,6 +92,7 @@ class MastodonClientSpec : FunSpec({
               "domain" to "localhost",
               "title" to MastodonClientSpec::class.simpleName,
               "description" to "Embedded Mastodon instance for testing",
+              "source_url" to "https://thisisthesource.com",
               "version" to "3.1.2",
             )
           )
@@ -177,8 +178,8 @@ class MastodonClientSpec : FunSpec({
     client.close()
   }
 
-  listOf<() -> MastodonClient>(
-    {
+  mapOf(
+    "BigBone" to {
       BigBoneMastodonClient(
         ConfigFactory.parseMap(
           mapOf(
@@ -190,130 +191,140 @@ class MastodonClientSpec : FunSpec({
         )
       )
     },
-  ).forEach { factory ->
-    test("client can get instance details") {
-      val client = factory()
-      val details = client.instanceDetails()
-
-      details.shouldBeRight {
-        logger.warn(it.cause) { "Unable to get instance details" }
-        it.toString()
-      }.apply {
-        domain shouldBe "localhost"
-        title shouldBe MastodonClientSpec::class.simpleName
-        description shouldBe "Embedded Mastodon instance for testing"
-        version shouldBe "3.1.2"
-      }
-    }
-
-    test("client can post an unlisted status in reply to another status") {
-      val client = factory()
-      val testMessage = "This is a test message"
-      val replyToId = "original-status-id"
-
-      val result = client.unlistedPost(testMessage, replyToId)
-
-      result.shouldBeRight {
-        logger.warn(it.cause) { "Unable to post unlisted status" }
-        it.toString()
-      }.apply {
-        id shouldBe "test-status-id"
-        content shouldBe testMessage
-        inReplyToId shouldBe replyToId
-        account.id shouldBe "test-account-id"
-        account.username shouldBe "testuser"
-        account.qualifiedName shouldBe "testuser@localhost"
-      }
-    }
-
-    test("client can dismiss a notification") {
-      val client = factory()
-      val notificationId = "test-notification-id"
-
-      val result = client.dismissNotification(notificationId)
-
-      result.shouldBeRight {
-        logger.warn(it.cause) { "Unable to dismiss notification" }
-        it.toString()
-      }
-      dismissedNotifications shouldContain notificationId
-    }
-
-    test("client can get notification flow") {
-      val client = factory()
-
-      val notifications = client.notificationFlow()
-        .take(2)
-        .toList()
-
-      notifications.size shouldBe 2
-
-      val firstNotification = notifications[0]
-      firstNotification.shouldBeRight { problem ->
-        logger.warn(problem.cause) { "Unable to get notification" }
-        problem.toString()
-      }.apply {
-        id shouldBe "1"
-        status.id shouldBe "test-status-id-1"
-        status.content shouldBe "Test notification 1"
-        status.account.id shouldBe "test-account-id"
-        status.account.username shouldBe "testuser"
-        status.account.qualifiedName shouldBe "testuser@localhost"
-      }
-
-      val secondNotification = notifications[1]
-      secondNotification.shouldBeRight { problem ->
-        logger.warn(problem.cause) { "Unable to get notification" }
-        problem.toString()
-      }.apply {
-        id shouldBe "2"
-        status.id shouldBe "test-status-id-2"
-        status.content shouldBe "Test notification 2"
-        status.account.id shouldBe "test-account-id"
-        status.account.username shouldBe "testuser"
-        status.account.qualifiedName shouldBe "testuser@localhost"
-      }
-    }
-
-    test("client can page through notifications using several requests") {
-      val client = factory()
-
-      // Set a small limit to force pagination
-      val pageSize = 3
-
-      // Take more notifications than are returned in a single page
-      val notifications = client.notificationFlow(pageSize)
-        .take(8)
-        .toList()
-
-      // Verify we got the expected number of notifications
-      notifications.size shouldBe 8
-
-      // Verify the IDs of the notifications we received
-      val notificationIds = notifications.mapNotNull {
-        it.fold(
-          { null },
-          { it.id }
+    "ktor" to {
+      KtorMastodonClient(
+        ConfigFactory.parseMap(
+          mapOf(
+            "mastodon.instance-name" to "localhost",
+            "mastodon.port" to port,
+            "mastodon.disable-https" to true,
+            "mastodon.access-token" to "hard-coded-test-access-token"
+          )
         )
+      )
+    },
+  ).forEach { (name, factory) ->
+    context("$name client") {
+      test("client can get instance details") {
+        val client = factory()
+        val details = client.instanceDetails()
+
+        details.shouldBeRight {
+          logger.warn(it.cause) { "Unable to get instance details" }
+          it.toString()
+        }.apply {
+          domain shouldBe "localhost"
+          title shouldBe MastodonClientSpec::class.simpleName
+          description shouldBe "Embedded Mastodon instance for testing"
+          version shouldBe "3.1.2"
+        }
       }
 
-      // We should have received notifications 1 through 8 in order
-      notificationIds shouldBe (1..8).map { it.toString() }
+      test("client can post an unlisted status in reply to another status") {
+        val client = factory()
+        val testMessage = "This is a test message"
+        val replyToId = "original-status-id"
 
-      // Verify the content of a few notifications to ensure they're correct
-      notifications[0].shouldBeRight().apply {
-        id shouldBe "1"
-        status.content shouldBe "Test notification 1"
+        val result = client.unlistedPost(testMessage, replyToId)
+
+        result.shouldBeRight {
+          logger.warn(it.cause) { "Unable to post unlisted status" }
+          it.toString()
+        }.apply {
+          id shouldBe "test-status-id"
+          content shouldBe testMessage
+          inReplyToId shouldBe replyToId
+          account.id shouldBe "test-account-id"
+          account.username shouldBe "testuser"
+          account.qualifiedName shouldBe "testuser@localhost"
+        }
       }
 
-      notifications[4].shouldBeRight().apply {
-        id shouldBe "5"
-        status.content shouldBe "Test notification 5"
+      test("client can dismiss a notification") {
+        val client = factory()
+        val notificationId = "test-notification-id"
+
+        val result = client.dismissNotification(notificationId)
+
+        result.shouldBeRight {
+          logger.warn(it.cause) { "Unable to dismiss notification" }
+          it.toString()
+        }
+        dismissedNotifications shouldContain notificationId
       }
 
-      notifications[7].shouldBeRight().apply {
-        id shouldBe "8"
-        status.content shouldBe "Test notification 8"
+      test("client can get notification flow") {
+        val client = factory()
+
+        val notifications = client.notificationFlow()
+          .take(2)
+          .toList()
+
+        notifications.size shouldBe 2
+
+        val firstNotification = notifications[0]
+        firstNotification.shouldBeRight { problem ->
+          logger.warn(problem.cause) { "Unable to get notification" }
+          problem.toString()
+        }.apply {
+          id shouldBe "1"
+          status.id shouldBe "test-status-id-1"
+          status.content shouldBe "Test notification 1"
+          status.account.id shouldBe "test-account-id"
+          status.account.username shouldBe "testuser"
+          status.account.qualifiedName shouldBe "testuser@localhost"
+        }
+
+        val secondNotification = notifications[1]
+        secondNotification.shouldBeRight { problem ->
+          logger.warn(problem.cause) { "Unable to get notification" }
+          problem.toString()
+        }.apply {
+          id shouldBe "2"
+          status.id shouldBe "test-status-id-2"
+          status.content shouldBe "Test notification 2"
+          status.account.id shouldBe "test-account-id"
+          status.account.username shouldBe "testuser"
+          status.account.qualifiedName shouldBe "testuser@localhost"
+        }
+      }
+
+      test("client can page through notifications using several requests") {
+        val client = factory()
+
+        // Set a small limit to force pagination
+        val pageSize = 3
+
+        // Take more notifications than are returned in a single page
+        val notificationEithers = client.notificationFlow(pageSize)
+          .take(8)
+          .toList()
+
+        // Verify we got the expected number of notifications
+        notificationEithers.size shouldBe 8
+        val notifications = notificationEithers.map { it.shouldBeRight() }
+
+        // Verify the IDs of the notifications we received
+        val notificationIds = notifications.map { it.id }
+
+        // We should have received notifications 1 through 8 in order
+        notificationIds shouldBe (1..8).map { it.toString() }
+
+        // Verify the content of a few notifications to ensure they're correct
+        notifications[0].apply {
+          id shouldBe "1"
+          status.content shouldBe "Test notification 1"
+        }
+
+        notifications[4].apply {
+          id shouldBe "5"
+          status.content shouldBe "Test notification 5"
+        }
+
+        notifications[7].apply {
+          id shouldBe "8"
+          status.content shouldBe "Test notification 8"
+        }
       }
     }
   }

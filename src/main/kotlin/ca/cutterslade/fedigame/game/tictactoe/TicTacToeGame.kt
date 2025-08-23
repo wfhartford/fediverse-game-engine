@@ -181,10 +181,8 @@ private data class TicTacToeGameState(
   }
 }
 
-class TicTacToeGame : Game {
-  companion object {
-    private val MoveRegex = Regex("(?i)[a-c][1-3]")
-  }
+object TicTacToeGame : Game {
+  private val MoveRegex = Regex("(?i)[a-c][1-3]")
 
   @OptIn(ExperimentalContracts::class)
   private fun GameState.mine(): TicTacToeGameState {
