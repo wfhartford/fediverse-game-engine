@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  kotlin("jvm") version "2.1.21"
-  kotlin("plugin.serialization") version "2.1.21"
+  kotlin("jvm") version "2.2.20"
+  kotlin("plugin.serialization") version "2.2.20"
 }
 
 group = "ca.cutterslade.fedigame"
