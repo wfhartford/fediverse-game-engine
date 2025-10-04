@@ -33,8 +33,7 @@ dependencies {
 
   testImplementation(kotlin("test"))
 
-  val kotestVersion = "6.0.3"
-  testImplementation(platform("io.kotest:kotest-bom:$kotestVersion"))
+  testImplementation(platform("io.kotest:kotest-bom:6.0.3"))
   testImplementation("io.kotest:kotest-runner-junit5")
   testImplementation("io.kotest:kotest-assertions-core")
   testImplementation("io.kotest.extensions:kotest-assertions-arrow:2.0.0")
